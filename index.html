@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<title>Canvas</title>
+<style>
+*{
+	margin:0;
+	padding:0;
+}
+canvas{
+	position:absolute;
+	top:1px;
+	left:1px;
+}
+#s_cvs{
+	visibility:hidden;
+}
+#dev{
+	position:absolute;
+	top:100px;
+	left:700px;
+}
+</style>
+<script>
+
+window.onload=function(){
+
+	var system={
+		sw:640,
+		sh:800,
+		top_text:"Hello,canvas World.",
+		bottom_text:"please press enter",
+		play:false,
+		print:true,
+		xflag:false,
+		yflag:false,
+		Screen:setInterval(function(){
+
+			document.onkeydown=function(e){
+				if(!e) e=window.event;
+				if(e.keyCode>=37&&e.keyCode<=40) system["csk"][e.keyCode%37]=true;
+				if(e.keyCode==13){
+					system["Switch"]("play",true);
+					system["Switch"]("print",false);
+					system['Switch']("title");
+				}
+			};
+
+			document.onkeyup=function(e){
+				if(!e) e=window.event;
+				if(e.keyCode>=37&&e.keyCode<=40) system["csk"][e.keyCode%37]=false;
+			};
+
+			if(system['play']){
+
+				if(system['csk'][0]){
+					ref['x']-=ref['l_speed'];
+					if(ref['l_speed']<ref['max_speed']){
+						ref['l_speed']+=ref["accele"];
+					}
+				}else if(ref['l_speed']>ref['min_speed']){
+					ref['l_speed']-=ref["accele"];
+				}
+
+				if(system['csk'][2]){
+					ref['x']+=ref['r_speed'];
+					if(ref['r_speed']<ref['max_speed']){
+						ref['r_speed']+=ref["accele"];
+					}
+				}else if(ref['r_speed']>ref['min_speed']){
+					ref['r_speed']-=ref["accele"];
+				}
+
+				ball['x']+=ball['xm']*Math.cos(ball['x_ang']*Math.PI/180);
+				ball['y']+=ball['ym']*Math.cos(ball['y_ang']*Math.PI/180);
+
+				var f=[0,0,0,0,0];
+
+				f=[
+					ball['x']-ball['xm'],
+					system['sw']-(ball['x']+ball['w']+ball['xm']),
+					ball['y']-ball['ym'],
+					system['sh']-(ball['y']),
+					ref['y']-(ball['y']+ball['h']+ball['ym'])
+				];
+
+				for(key in blocks){
+					if((ball['x']-ball['xm'])<(blocks[key]['x']+blocks[key]['w'])&&!(ball['x']<(blocks[key]['x']+blocks[key]['w']))&&ball['x_ang']==180){
+						if((ball['y']-ball['ym'])<=(blocks[key]['y']+blocks[key]['h'])&&blocks[key]['y']<=(ball['y']+ball['h']+ball['ym'])){
+							f[0]=(ball['x']-ball['xm'])-(blocks[key]['x']+blocks[key]['w']);
+							delete blocks[key];
+						}
+					}else if(blocks[key]['x']<(ball['x']+ball['w']+ball['xm'])&&!(blocks[key]['x']<(ball['x']+ball['w']))&&ball['x_ang']==0){
+						if((ball['y']-ball['ym'])<=(blocks[key]['y']+blocks[key]['h'])&&blocks[key]['y']<=(ball['y']+ball['h']+ball['ym'])){
+							f[1]=blocks[key]['x']-(ball['x']+ball['w']+ball['xm']);
+							delete blocks[key];
+						}
+					}else if((ball['y']-ball['ym'])<(blocks[key]['y']+blocks[key]['h'])&&!(ball['y']<(blocks[key]['y']+blocks[key]['h']))&&ball['y_ang']==180){
+						if((ball['x']-ball['xm'])<=(blocks[key]['x']+blocks[key]['w'])&&blocks[key]['x']<=(ball['x']+ball['w']+ball['xm'])){
+							f[2]=(ball['y']-ball['ym'])-(blocks[key]['y']+blocks[key]['h']);
+							delete blocks[key];
+						}
+					}else if(blocks[key]['y']<(ball['y']+ball['h']+ball['ym'])&&!(blocks[key]['y']<(ball['y']+ball['h']))&&ball['y_ang']==0){
+						if((ball['x']-ball['xm'])<=(blocks[key]['x']+blocks[key]['w'])&&blocks[key]['x']<=(ball['x']+ball['w']+ball['xm'])){
+							f[3]=blocks[key]['y']-(ball['y']+ball['h']+ball['ym']);
+							delete blocks[key];
+						}
+					}
+				}
+
+				var f_check=[false,false,false,false,false];
+
+				for(var i=0; i<f.length; i++){
+					if(f[i]<0){
+						if(i<=1&&!ball['xmflag']){
+							ball['xm_sub']=ball['xm'];
+							ball['xm']=ball['xm']+(f[i]);
+							ball['xmflag']=true;
+							f_check[i]=true;
+						}else if(1<i&&i<=4){
+							if(i==4){
+								if(ref['x']<=ball['x']&&ref['x']+ref['w']>=ball['x']+ball['w']){
+									ball['ym_sub']=ball['ym'];
+									ball['ym']=ball['ym']+(f[i]);
+									ball['ymflag']=true;
+									f_check[i]=true;
+								}
+							}else if(i!=4&&!ball['ymflag']){
+								ball['ym_sub']=ball['ym'];
+								ball['ym']=ball['ym']+(f[i]);
+								ball['ymflag']=true;
+								f_check[i]=true;
+							}
+						}
+					}
+				}
+
+				if(ball['xmflag']){
+					if(f_check[0]){
+						ball['x']-=ball['xm'];
+					}
+					if(f_check[1]){
+						ball['x']+=ball['xm'];
+					}
+					ball['xmflag']=false;
+					ball['x_ang']+=180;
+				}else{
+					ball['xm']=ball['xm_sub'];
+				}
+
+				if(ball['ymflag']){
+					if(f_check[2]){
+						ball['y']-=ball['ym'];
+					}
+					if(f_check[3]){
+						if(system['sh']<ball['y']){
+							ball['y']=system['sh'];
+							system["Switch"]("play",false);
+							system['Switch']("gameover");
+							system["Switch"]("print",true);
+							ball['x_ang']=0;
+							ball['y_ang']=0;
+							ball['w']=10;
+							ball['h']=10;
+							ball['r']=5;
+							ball['x']=(system['sw']/2);
+							ball['y']=(system['sh']-150);
+							ball['xm']=0,
+							ball['ym']=6,
+							ball['xm_sub']=0,
+							ball['ym_sub']=6,
+							ball['xmflag']=false;
+							ball['ymflag']=false;
+						}else{
+							ball['y']+=ball['ym'];
+						}
+					}
+					if(f_check[4]){
+						ball['y']+=ball['ym'];
+						var xm_check=ball['xm_sub'];
+						if(ref["l_speed"]-ref["r_speed"]>0){
+							if(ball['x_ang']==0){
+								ball['xm_sub']+=Math.floor(ref["l_speed"]-ref["r_speed"]);
+							}else{
+								ball['xm_sub']-=Math.floor(ref["l_speed"]-ref["r_speed"]);
+							}
+						}else if(ref["r_speed"]-ref["l_speed"]>0){
+							if(ball['x_ang']==0){
+								ball['xm_sub']-=Math.floor(ref["r_speed"]-ref["l_speed"]);
+							}else{
+								ball['xm_sub']+=Math.floor(ref["r_speed"]-ref["l_speed"]);
+							}
+						}
+						if(ball['xm_sub']==0){
+							//ball['x_ang']=90;
+						}else if(ball['xm_sub']<0){
+							ball['x_ang']+=180;
+						}
+					}
+					ball['y_ang']+=180;
+					ball['ymflag']=false;
+				}else{
+					ball['ym']=ball['ym_sub'];
+				}
+
+				if(ball['xm']<0) ball['xm']*=(-1);
+				if(ball['ym']<0) ball['ym']*=(-1);
+				ball['x']=Math.floor(ball['x']);
+				ball['y']=Math.floor(ball['y']);
+				ball['xm']=Math.floor(ball['xm']);
+				ball['ym']=Math.floor(ball['ym']);
+
+
+				if(ball['x_ang']>180){
+					ball['x_ang']=0;
+				}
+
+				if(ball['y_ang']>180){
+					ball['y_ang']=0;
+				}
+
+			}
+
+			s_cvs['ctx'].clearRect(0,0,system['sw'],system['sh']);
+			s_cvs['ctx'].fillStyle="#000";
+			s_cvs['ctx'].fillRect(0,0,system['sw'],system['sh']);
+
+			if(system['play']){
+
+				//ref
+				s_cvs['ctx'].fillStyle="#fff";
+				s_cvs['ctx'].fillRect(ref['x'],ref['y'],ref['w'],ref['h']);
+
+				//blocks
+				for(key in blocks){
+					s_cvs['ctx'].fillStyle=blocks[key]['c'];
+					s_cvs['ctx'].fillRect(blocks[key]['x'],blocks[key]['y'],blocks[key]['w'],blocks[key]['h']);
+				}
+
+				//ball
+				s_cvs['ctx'].fillStyle="#fff";
+				s_cvs['ctx'].beginPath();
+				s_cvs['ctx'].arc(ball['x']+(ball['r']),ball['y']+(ball['r']),(ball['r']),0,Math.PI*2,true);
+				s_cvs['ctx'].fill();
+
+			}
+
+			//Print
+			if(system['print']){
+		    s_cvs['ctx'].fillStyle ="#fff";
+		    s_cvs['ctx'].font = "50px 'sans-serif'";
+		    s_cvs['ctx'].textAlign = "center";
+		    s_cvs['ctx'].textBaseline = "top";
+		    s_cvs['ctx'].fillText(system['top_text'],system['sw']/2, 150,0);
+		    s_cvs['ctx'].font = "20px 'sans-serif'";
+		    s_cvs['ctx'].fillText(system['bottom_text'],system['sw']/2, 300,0);
+			}
+
+			//buf
+			m_cvs['ctx'].drawImage(s_cvs['cvs'],0,0);
+
+		},32),
+		Switch:function(swt,buttun){
+			switch(swt){
+				case "play":
+					system['play']=buttun;
+				break;
+				case "print":
+					system['print']=buttun;
+				break;
+				case "title":
+					system['top_text']="Hello,canvas World.";
+					system['bottom_text']="please press enter";
+				break;
+				case "gameover":
+					system['top_text']="GameOver.";
+					system['bottom_text']="Continue,please press enter";
+				break;
+				default:
+				break;
+			}
+		},
+		csk:[false,false,false,false],
+		Develop:setInterval(function(){
+			var dev=document.getElementById("dev");
+			dev.innerHTML="ball['x']："+ball['x']+"<br>";
+			dev.innerHTML+="ball['xm']："+ball['xm']+"<br>";
+			dev.innerHTML+="ball['y']："+ball['y']+"<br>";
+			dev.innerHTML+="ball['ym']："+ball['ym']+"<br>";
+			dev.innerHTML+="ball['x_ang']："+ball['x_ang']+"<br>";
+			dev.innerHTML+="ball['y_ang']："+ball['y_ang']+"<br>";
+			dev.innerHTML+="ref['l_speed']："+ref['l_speed']+"<br>";
+			dev.innerHTML+="ref['r_speed']："+ref['r_speed']+"<br>";
+		},32)
+	};
+
+	var s_cvs={
+		cvs:document.getElementById("s_cvs"),
+		ctx:document.getElementById("s_cvs").getContext('2d'),
+	};
+
+	var m_cvs={
+		cvs:document.getElementById("m_cvs"),
+		ctx:document.getElementById("m_cvs").getContext('2d'),
+	};
+
+	var ref={
+		w:40,
+		h:1,
+		x:((system['sw']-40)/2),
+		y:system['sh']-20,
+		l_speed:0,
+		r_speed:0,
+		accele:0.5,
+		min_speed:0,
+		max_speed:10,
+	};
+
+	var ball={
+		x_ang:0,
+		y_ang:0,
+		w:10,
+		h:10,
+		r:5,
+		x:(system['sw']/2),
+		y:(system['sh']-150),
+		xm:0,
+		ym:6,
+		xm_sub:0,
+		ym_sub:6,
+		xmflag:false,
+		ymflag:false,
+		bxmflag:false,
+		bymflag:false,
+	};
+
+	var block={
+		x:150,
+		y:150,
+		w:20,
+		h:20,
+		c:"rgba(255,255,255,0.5)",
+	};
+
+	var blocks={};
+
+	for(var i=0; i<300; i++){
+		blocks["b"+String(i)]=Object.create(block);
+		blocks["b"+String(i)]['x']=Math.floor(Math.random()*(system['sw']-20))+10;
+		blocks["b"+String(i)]['y']=Math.floor(Math.random()*(system['sh']-200));
+		blocks["b"+String(i)]['w']=Math.floor(Math.random()*30)+20;
+		blocks["b"+String(i)]['h']=Math.floor(Math.random()*30)+20;
+		blocks["b"+String(i)]['c']="rgba("+(Math.floor(Math.random()*155)+100)+","+(Math.floor(Math.random()*155)+100)+","+(Math.floor(Math.random()*155)+100)+","+((Math.floor(Math.random()*10)/10)+0.5)+")";
+	}
+
+	system['Screen'];
+	system['Develop'];
+
+};
+
+</script>
+
+</head>
+<body>
+	<canvas id="s_cvs" width="640" height="800">shadowcvs</canvas>
+	<canvas id="m_cvs" width="640" height="800">maincvs</canvas>
+	<div id="dev">Develop</div>
+</body>
+</html>
